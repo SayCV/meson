@@ -95,7 +95,13 @@ class TICompiler(Compiler):
         return ['-Ooff']
 
     def get_output_args(self, outputname: str) -> T.List[str]:
-        return [f'--output_file={outputname}']
+        mlog.info(f'outputname: {outputname}')
+        dir = os.path.dirname(outputname)
+        mlog.info(f'Output directory: {dir}')
+        if dir == '':
+            dir = '.'
+        filename = os.path.basename(outputname)
+        return ['-fr=' + dir, '-fo=' + filename]
 
     def get_werror_args(self) -> T.List[str]:
         return ['--emit_warnings_as_errors']
