@@ -9,6 +9,7 @@ import os
 import typing as T
 
 from ...mesonlib import EnvironmentException
+from ... import mlog
 
 if T.TYPE_CHECKING:
     from ...envconfig import MachineInfo
@@ -21,24 +22,20 @@ else:
     Compiler = object
 
 ti_optimization_args: T.Dict[str, T.List[str]] = {
-    'plain': [],
-    '0': ['-O0'],
-    'g': ['-Ooff'],
-    '1': ['-O1'],
-    '2': ['-O2'],
-    '3': ['-O3'],
-    's': ['-O4']
+    "plain": [],
+    "0": ["-O0"],
+    "g": ["-Ooff"],
+    "1": ["-O1"],
+    "2": ["-O2"],
+    "3": ["-O3"],
+    "s": ["-O4"],
 }
 
-ti_debug_args: T.Dict[bool, T.List[str]] = {
-    False: [],
-    True: ['-g']
-}
+ti_debug_args: T.Dict[bool, T.List[str]] = {False: [], True: ["-g"]}
 
 
 class TICompiler(Compiler):
-
-    id = 'ti'
+    id = "ti"
 
     if T.TYPE_CHECKING:
         # Older versions of mypy can't figure this out for some reason.
@@ -46,18 +43,21 @@ class TICompiler(Compiler):
 
     def __init__(self) -> None:
         if not self.is_cross:
-            raise EnvironmentException('TI compilers only support cross-compilation.')
+            raise EnvironmentException("TI compilers only support cross-compilation.")
 
-        self.can_compile_suffixes.add('asm')    # Assembly
-        self.can_compile_suffixes.add('cla')    # Control Law Accelerator (CLA) used in C2000
+        self.can_compile_suffixes.add("asm")  # Assembly
+        self.can_compile_suffixes.add(
+            "cla"
+        )  # Control Law Accelerator (CLA) used in C2000
 
         default_warn_args: T.List[str] = []
         self.warn_args: T.Dict[str, T.List[str]] = {
-            '0': [],
-            '1': default_warn_args,
-            '2': default_warn_args + [],
-            '3': default_warn_args + [],
-            'everything': default_warn_args + []}
+            "0": [],
+            "1": default_warn_args,
+            "2": default_warn_args + [],
+            "3": default_warn_args + [],
+            "everything": default_warn_args + [],
+        }
 
     def get_pic_args(self) -> T.List[str]:
         # PIC support is not enabled by default for TI compilers,
@@ -65,7 +65,7 @@ class TICompiler(Compiler):
         return []
 
     def get_pch_suffix(self) -> str:
-        return 'pch'
+        return "pch"
 
     def get_pch_use_args(self, pch_dir: str, header: str) -> T.List[str]:
         return []
@@ -92,48 +92,48 @@ class TICompiler(Compiler):
         return []
 
     def get_no_optimization_args(self) -> T.List[str]:
-        return ['-Ooff']
+        return ["-Ooff"]
 
     def get_output_args(self, outputname: str) -> T.List[str]:
-        mlog.info(f'outputname: {outputname}')
-        dir = os.path.dirname(outputname)
-        mlog.info(f'Output directory: {dir}')
-        if dir == '':
-            dir = '.'
-        filename = os.path.basename(outputname)
-        return ['-fr=' + dir, '-fo=' + filename]
+        return [f"--output_file={outputname}"]
 
     def get_werror_args(self) -> T.List[str]:
-        return ['--emit_warnings_as_errors']
+        return ["--emit_warnings_as_errors"]
 
     def get_include_args(self, path: str, is_system: bool) -> T.List[str]:
-        if path == '':
-            path = '.'
-        return ['-I=' + path]
+        if path == "":
+            path = "."
+        return ["-I=" + path]
 
     @classmethod
     def _unix_args_to_native(cls, args: T.List[str], info: MachineInfo) -> T.List[str]:
         result: T.List[str] = []
         for i in args:
-            if i.startswith('-D'):
-                i = '--define=' + i[2:]
-            if i.startswith('-Wl,-rpath='):
+            if i.startswith("-D"):
+                i = "--define=" + i[2:]
+            if i.startswith("-Wl,-rpath="):
                 continue
-            elif i == '--print-search-dirs':
+            elif i == "--print-search-dirs":
                 continue
-            elif i.startswith('-L'):
+            elif i.startswith("-L"):
                 continue
             result.append(i)
         return result
 
-    def compute_parameters_with_absolute_paths(self, parameter_list: T.List[str], build_dir: str) -> T.List[str]:
+    def compute_parameters_with_absolute_paths(
+        self, parameter_list: T.List[str], build_dir: str
+    ) -> T.List[str]:
         for idx, i in enumerate(parameter_list):
-            if i[:15] == '--include_path=':
-                parameter_list[idx] = i[:15] + os.path.normpath(os.path.join(build_dir, i[15:]))
-            if i[:2] == '-I':
-                parameter_list[idx] = i[:2] + os.path.normpath(os.path.join(build_dir, i[2:]))
+            if i[:15] == "--include_path=":
+                parameter_list[idx] = i[:15] + os.path.normpath(
+                    os.path.join(build_dir, i[15:])
+                )
+            if i[:2] == "-I":
+                parameter_list[idx] = i[:2] + os.path.normpath(
+                    os.path.join(build_dir, i[2:])
+                )
 
         return parameter_list
 
     def get_dependency_gen_args(self, outtarget: str, outfile: str) -> T.List[str]:
-        return ['--preproc_with_compile', f'--preproc_dependency={outfile}']
+        return ["--preproc_with_compile", f"--preproc_dependency={outfile}"]
